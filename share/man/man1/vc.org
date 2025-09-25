@@ -1,0 +1,79 @@
+#+TITLE: vc
+
+* NAME
+
+vc - A command to open and edit commands and shell functions.
+
+* SYNOPSIS
+
+#+begin_src shell
+vc NAME
+whence NAME
+#+end_src
+
+* DESCRIPTION
+
+The command =vc= finds and opens shell functions, commands from =PATH=, and
+sourceable files from =PATH=.
+
+In the case of shell functions, it opens the file containing the definition
+of the function at the line where the function definition starts.
+
+=vc= only looks for sourceable files if the shell option =sourcepath= is on.
+
+=vc= searches in the same order as the shell would for results.  If there is
+an executable script with the same name as a shell function, the shell
+function will be opened.
+
+The =whence= command follows the same logic but simply prints the location
+of the shell function, command, or sourceable file.
+
+Some handling of aliases is available if the variable =VC_EXPAND_ALIASES= is
+defined and not empty.  In that case, the definition of the alias is expanded
+and the first word of the definition is used for the search.
+
+For example, if ~alias doit='cmd arg1 arg2'~ then the first word of the alias
+definition is =cmd= and =vc= will look for a shell function, executable file,
+or sourceable file in =PATH=.
+
+* CAVEATS
+
+For shell functions, BASH remembers the path given on the command line as the
+location of the function definition.  This means that if a function was
+defined in a file that was sourced using a relative path, =vc= will have no
+way of knowing the location of the function definition.
+
+Finding the location of alias definitions is not possbile.  This is why the
+best we can do is use the first word of the alias and look for a function or
+file.
+
+The search in =PATH= finds many files that are not text.  In that case =vc=
+will print a message saying and ask for confirmation.
+
+* Finding alias definitions
+
+Since the tool cannot find alias defintions, here are some tips for doing
+that manually.
+
+First set a PS4 like this:
+#+begin_src
+PS4='+ \033[35m${BASH_SOURCE[0]}\033[36m:\033[1;37m${FUNCNAME:+${FUNCNAME[0]}}\033[22;36m:\033[32m${LINENO}\033[36m:\033[0m' bash [--login] -x
+#+end_src
+
+If environment variables can affect the startup process, something like
+#+begin_src
+ssh localhost "PS4='+ \033[35m${BASH_SOURCE[0]}\033[36m:\033[1;37m${FUNCNAME:+${FUNCNAME[0]}}\033[22;36m:\033[32m${LINENO}\033[36m:\033[0m' bash [--login] -x"
+#+end_src
+
+And search the output.
+
+* LORE
+
+I created this script when answering
+[[https://stackoverflow.com/questions/54710501/command-completion-with-full-path-expansion-injected-into-history-for-vim/74283218#74283218][this question on Stack Overflow]].
+That's why the command is called =vc= so I don't know what VC stands for.
+But I'm deciding right now that it's for "view command".
+
+* AUTHOR
+
+Philippe Carphin
