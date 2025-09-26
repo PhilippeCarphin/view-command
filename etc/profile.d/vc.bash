@@ -54,7 +54,7 @@ vc(){
     echo "${FUNCNAME[0]}: Looking for executable '${cmd}' in PATH" >&2
     local file
     if file=$(command which ${cmd} 2>/dev/null) ; then
-        echo "${FUNCNAME[0]}: ... ${cmd} is '${file}' from PATH" >&2
+        echo "${FUNCNAME[0]}: ... '${cmd}' is '${file}' from PATH" >&2
         local file_result="$(file -L ${file})"
         local file_result_first_line="${file_result%%$'\n'*}"
         # Result is of the form '<name>: <information>'
@@ -70,18 +70,20 @@ vc(){
             command vim ${file}
         fi
         return
+    else
+        echo "${FUNCNAME[0]}: ... '${cmd}' is not an executable in PATH" >&2
     fi
 
-    if ! shopt -q sourcepath ; then
-        return 0
-    fi
-
-    echo "${FUNCNAME[0]}: Looking for sourceable file in PATH" >&2
-    file="$(find -L $(echo $PATH | tr ':' ' ') -name "${cmd}" ! -perm -100 -type f -print -quit 2>/dev/null)"
-    if [[ -n "${file}" ]] ; then
-        echo "${FUNCNAME[0]}: ${cmd} is non-executable file '${file}' from PATH" >&2
-        command vim ${file}
-        return
+    if shopt -q sourcepath ; then
+        echo "${FUNCNAME[0]}: Looking for sourceable file in PATH" >&2
+        file="$(find -L $(echo $PATH | tr ':' ' ') -name "${cmd}" ! -perm -100 -type f -print -quit)"
+        if [[ -n "${file}" ]] ; then
+            echo "${FUNCNAME[0]}: ... '${cmd}' is non-executable file '${file}' from PATH" >&2
+            command vim ${file}
+            return
+        else
+            echo "${FUNCNAME[0]}: ... '${cmd}' is not a sourceable file in PATH" >&2
+        fi
     fi
 }
 
@@ -106,10 +108,11 @@ _vc_add_path_sourceable(){
             if [[ -x ${f} ]] ; then
                 continue
             fi
-            local file_result="$(file -L ${f})"
-            if ! ( [[ "${file_result}" == *ASCII* ]] || [[ "${file_result}" == *UTF-8* ]] ) ; then
-                continue
-            fi
+            # Eliminate files that are not ASCII or UTF8
+            case "$(file -L "${f}")" in
+                *ASCII*|*UTF-8*) ;;
+                *) continue ;;
+            esac
             COMPREPLY+=(${f##*/})
         done
     } done
@@ -136,19 +139,22 @@ _vc_open-shell-function(){
 
     local info=$(declare -F ${shell_function})
     if [[ -z "${info}" ]] ; then
-        echo "vc: ... No info from 'declare -F' for '${shell_function}'"
+        echo "vc: ... '${shell_function}' is not a shell function" >&2
+        ${reset_extdebug}
         return 1
     fi
 
     local lineno
     if ! lineno=$(echo ${info} | cut -d ' ' -f 2) ; then
-         echo "vc: ERROR: Could not get line number from info '${info}' on '${shell_function}'"
+         echo "vc: Error getting line number from info '${info}' on '${shell_function}'" >&2
+         ${reset_extdebug}
          return 1
     fi
 
     local file
     if ! file=$(echo ${info} | cut -d ' ' -f 3) ; then
-        echo "vc: ERROR: Could not get filename from info '${info}' on '${shell_function}'"
+        echo "vc: Error getting filename from info '${info}' on '${shell_function}'" >&2
+        ${reset_extdebug}
         return 1
     fi
     if [[ "${file}" != /* ]] ; then
