@@ -57,10 +57,14 @@ vc(){
         echo "${FUNCNAME[0]}: ... ${cmd} is '${file}' from PATH" >&2
         local file_result="$(file -L ${file})"
         local file_result_first_line="${file_result%%$'\n'*}"
+        # Result is of the form '<name>: <information>'
+        # and we need to remove name because it could contain the word 'text'
+        # and less likely but still possible: ASCII or UTF-8.
+        local file_result_without_filename="${file_result_first_line#*:}"
         local open_file=y
-        case "${file_result_first_line}" in
-            *ASCII*|*UTF-8*) ;;
-            *) read -p "File '${file}' is not ASCII or UTF-8 text, still open? [y/n] > " open_file ;;
+        case "${file_result_without_filename}" in
+            *ASCII*|*UTF-8*|*text*) ;;
+            *) read -p "${FUNCNAME[0]}: File '${file}' is not ASCII or UTF-8 text, still open? [y/n] > " open_file ;;
         esac
         if [[ "${open_file}" == y ]] ; then
             command vim ${file}
