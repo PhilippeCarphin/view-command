@@ -67,7 +67,7 @@ vc(){
             *) read -p "${FUNCNAME[0]}: File '${file}' is not ASCII or UTF-8 text, still open? [y/n] > " open_file ;;
         esac
         if [[ "${open_file}" == y ]] ; then
-            command vim ${file}
+            _vc_open_file_at_line ${file}
         fi
         return
     else
@@ -79,7 +79,7 @@ vc(){
         file="$(find -L $(echo $PATH | tr ':' ' ') -name "${cmd}" ! -perm -100 -type f -print -quit)"
         if [[ -n "${file}" ]] ; then
             echo "${FUNCNAME[0]}: ... '${cmd}' is non-executable file '${file}' from PATH" >&2
-            command vim ${file}
+            _vc_open_file_at_line ${file}
             return
         else
             echo "${FUNCNAME[0]}: ... '${cmd}' is not a sourceable file in PATH" >&2
@@ -166,8 +166,17 @@ _vc_open-shell-function(){
         return 2
     fi
 
-    echo "vc: Opening '${file}' at line ${lineno}"
-    command vim ${file} +${lineno}
+    echo "vc: ... Shell function '${cmd}' found: Opening '${file}' at line ${lineno}" >&2
+    _vc_open_file_at_line ${file} ${lineno}
+    local status=$?
+    if [[ ${source_func_file} == true ]] ; then
+        if (( status == 0 )) ; then
+            echo "vc: sourcing file '${file}'" >&2
+            source ${file}
+        else
+            echo "vc: Editor opening file returned non-zero: $status"
+        fi
+    fi
     ${reset_extdebug}
 }
 
@@ -217,3 +226,13 @@ whence(){
 }
 
 complete -F _vc vc whence
+
+_vc_open_file_at_line(){
+    local file=$1
+    local line=$2
+    case "${EDITOR}" in
+        emacs*|emacsclient*|ec*) ${EDITOR} ${line:++$line} $file ;;
+        *vim*|*vi*) ${EDITOR:-vim} $file ${line:++$line} ;;
+        "") vim $file ${line:++$line} ;;
+    esac
+}
