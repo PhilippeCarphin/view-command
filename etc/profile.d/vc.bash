@@ -5,7 +5,7 @@
 #
 _vc_usage(){
     cat <<-EOF
-	usage: vc CMD
+	usage: vc [-s] CMD
 
 	Open file where CMD is defined.  CMD can be
 	- A shell function: vc will open the file where the function is defined
@@ -14,6 +14,9 @@ _vc_usage(){
 	- A non-executable file in PATH if the shell option 'sourcepath' is active.
 	I don't know what vc means, I named it that because of the stack overflow
 	question that inspired me to make this tool.
+
+	If '-s' is specified, then if CMD is a shell function, the file containing
+	this function will be sourced when the editor returns.
 	EOF
 }
 
@@ -21,6 +24,11 @@ vc(){
     if [[ "$1" == "--help" ]] ; then
         _vc_usage
         return 0
+    fi
+    local source_func_file=false
+    if [[ "$1" == "-s" ]] ; then
+        source_func_file=true
+        shift
     fi
     local cmd="${1}"
     local alias_str
