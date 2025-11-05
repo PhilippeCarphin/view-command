@@ -21,15 +21,19 @@ _vc_usage(){
 }
 
 vc(){
-    if [[ "$1" == "--help" ]] ; then
-        _vc_usage
-        return 0
-    fi
+    eval set -- "$(getopt -n vc -o hLs --longoptions help,follow-link,source-file)"
+    local follow_link=false
     local source_func_file=false
-    if [[ "$1" == "-s" ]] ; then
-        source_func_file=true
-        shift
-    fi
+    while : ; do
+        case $1 in
+            -h|--help) usage ; return 0 ;;
+            -L|--follow-link) follow_link=true ; shift ;;
+            -s|--source-file) source_func_file=true ; shift ;;
+            --) shift ; break ;;
+            *) printf "Unhangled option: $2\n" ; return 1 ;;
+        esac
+    done
+
     local cmd="${1}"
     local alias_str
     if [[ -n ${VC_EXPAND_ALIASES} ]] ; then
@@ -183,7 +187,7 @@ _vc_open-shell-function(){
 whence(){
 
     local follow_link
-    if [[ $1 == -r ]] ; then
+    if [[ $1 == -L ]] ; then
         follow_link=true
         shift
     fi
@@ -196,17 +200,16 @@ whence(){
     local reset_extdebug=$(shopt -p extdebug)
     shopt -s extdebug
 
-    local func file info link realpath
+    local func file info link line realpath
     # Shell function
-    if info=$(declare -F ${cmd}) ; then
+    local name line file real_path
+    if read name line file < <(declare -F ${cmd}) ; then
         if [[ -n ${follow_link} ]] ; then
-            if ! file=$(echo ${info} | cut -d ' ' -f 3) ; then
-                echo "Could not extract file from declare -F output" >&2
+            if real_path=$(realpath ${file}) ; then
+                realpath=" -> $(realpath ${file})"
             fi
-            realpath=" ~ $(realpath ${file})"
         fi
-        echo "${info}${realpath}"
-        return
+        printf "${info}${realpath}\n"
     fi
 
     # File from PATH
