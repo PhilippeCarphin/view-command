@@ -104,7 +104,7 @@ vc(){
 _vc_add_path_sourceable(){
     local IFS=:
     local p
-    for p in ${PATH} ; do {
+    for p in ${PATH} ; do
         local IFS=$'\n'
         p=${p:-$PWD}
         for f in ${p}/* ; do
@@ -123,7 +123,7 @@ _vc_add_path_sourceable(){
             esac
             COMPREPLY+=(${f##*/})
         done
-    } done
+    done
 }
 
 _vc(){
