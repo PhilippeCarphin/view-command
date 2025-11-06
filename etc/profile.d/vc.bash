@@ -21,7 +21,7 @@ _vc_usage(){
 }
 
 vc(){
-    eval set -- "$(getopt -n vc -o hLs --longoptions help,follow-link,source-file)"
+    eval set -- "$(getopt -n vc -o hLs --longoptions help,follow-link,source-file "$@")"
     local follow_link=false
     local source_func_file=false
     while : ; do
@@ -34,6 +34,10 @@ vc(){
         esac
     done
 
+    if (( $# != 1 )) ; then
+        printf "${FUNCNAME[0]}: ERROR: Missing required argument CMD\n" >&2
+        return 1
+    fi
     local cmd="${1}"
     local alias_str
     if [[ -n ${VC_EXPAND_ALIASES} ]] ; then
