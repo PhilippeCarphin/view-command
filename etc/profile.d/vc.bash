@@ -5,28 +5,35 @@
 #
 _vc_usage(){
     cat <<-EOF
-	usage: vc [-s] CMD
+	usage: vc [-sLs] CMD
 
-	Open file where CMD is defined.  CMD can be
-	- A shell function: vc will open the file where the function is defined
-	  at the first line of the function
-	- An executable script in PATH: vc will open the file
-	- A non-executable file in PATH if the shell option 'sourcepath' is active.
-	I don't know what vc means, I named it that because of the stack overflow
-	question that inspired me to make this tool.
+	DESCRIPTION
 
-	If '-s' is specified, then if CMD is a shell function, the file containing
-	this function will be sourced when the editor returns.
+	    Open file where CMD is defined.  CMD can be
+	    - A shell function: vc will open the file where the function is defined
+	      at the first line of the function
+	    - An executable script in PATH: vc will open the file
+	    - A non-executable file in PATH if the shell option 'sourcepath' is active.
+	    I don't know what vc means, I named it that because of the stack overflow
+	    question that inspired me to make this tool, I decided it was short for
+	    \"view-command\".
+
+	OPTIONS:
+	    -s,--source-file: If '-s' is specified, then if CMD is a shell function,
+	        the file containing this function will be sourced when the editor returns.
+	    -L,--follow-link: Recursively follow links and resolve links in the PATH
+	        using the \`realpath\` command.
+	    -h,--help: Show this message
 	EOF
 }
 
 vc(){
-    eval set -- "$(getopt -n vc -o hLs --longoptions help,follow-link,source-file "$@")"
+    eval set -- "$(getopt -n vc -o hLs --longoptions help,follow-link,source-file -- "$@")"
     local follow_link=false
     local source_func_file=false
     while : ; do
         case $1 in
-            -h|--help) usage ; return 0 ;;
+            -h|--help) _vc_usage ; return 0 ;;
             -L|--follow-link) follow_link=true ; shift ;;
             -s|--source-file) source_func_file=true ; shift ;;
             --) shift ; break ;;
@@ -195,6 +202,11 @@ whence(){
         follow_link=true
         shift
     fi
+    if (($# == 0)) ; then
+        printf "${FUNCNAME[0]}: Usage: ${FUNCNAME[0]} [-L] CMD\n"
+        printf "${FUNCNAME[0]}: \033[31mERROR\033[0m: Missing argument CMD\n"
+        return 1
+    fi
     local -r cmd=$1
 
     if alias ${cmd} 2>/dev/null ; then
@@ -204,32 +216,27 @@ whence(){
     local reset_extdebug=$(shopt -p extdebug)
     shopt -s extdebug
 
-    local func file info link line realpath
-    # Shell function
-    local name line file real_path
+    local func file info link line realpath what ret=0
     if read name line file < <(declare -F ${cmd}) ; then
-        if [[ -n ${follow_link} ]] ; then
-            if real_path=$(realpath ${file}) ; then
-                realpath=" -> $(realpath ${file})"
-            fi
-        fi
-        printf "${info}${realpath}\n"
-    fi
-
-    # File from PATH
-    if file=$(command which ${cmd} 2>/dev/null) ; then
-        : good
-    elif file="$(find -L $(echo $PATH | tr ':' ' ') -mindepth 1 -maxdepth 1 -name "${cmd}" ! -perm -100 -type f)" ; then
-        : good
+        what="a shell function defined at line ${line} of ${file}"
+    elif file=$(command which ${cmd} 2>/dev/null) ; then
+        what="an executable file in PATH: ${file}"
+    elif file="$(find -L $(echo $PATH | tr ':' ' ') -mindepth 1 -maxdepth 1 -name "${cmd}" ! -perm -100 -type f -print -quit)" && [[ -n "${file}" ]] ; then
+        what="a sourceable file in PATH: ${file}"
     else
-        return 1
+        what="neither a shell function, an executable file in PATH or a sourceable file in PATH" >&2
+        ret=1
     fi
-
-    if [[ -n ${follow_link} ]] ; then
-        realpath=" ~ $(realpath ${file})"
+    if [[ -n ${follow_link} ]] && [[ -L ${file} ]] && [[ -n ${what} ]] ; then
+        if realpath=$(realpath "${file}") ; then
+            realpath=" -> ${realpath}"
+        else
+            printf "${FUNCNAME[0]}: WARNING: Could not get realpath of file\n" >&2
+        fi
     fi
-    echo "${file}${realpath}"
+    printf "'%s' is %s%s\n" "${cmd}" "${what}" "${realpath}"
     ${reset_extdebug}
+    return ${ret}
 }
 
 complete -F _vc vc whence
