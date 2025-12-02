@@ -5,7 +5,7 @@
 #
 _vc_usage(){
     cat <<-EOF
-	usage: vc [-s] CMD
+	usage: vc [-sLh] CMD
 
 	Open file where CMD is defined.  CMD can be
 	- A shell function: vc will open the file where the function is defined
@@ -21,18 +21,21 @@ _vc_usage(){
 }
 
 vc(){
-    eval set -- "$(getopt -n vc -o hLs --longoptions help,follow-link,source-file "$@")"
     local follow_link=false
     local source_func_file=false
-    while : ; do
-        case $1 in
-            -h|--help) usage ; return 0 ;;
-            -L|--follow-link) follow_link=true ; shift ;;
-            -s|--source-file) source_func_file=true ; shift ;;
-            --) shift ; break ;;
-            *) printf "Unhangled option: $2\n" ; return 1 ;;
+
+    local OPTIND=1
+    # Bash 5.3 only using ${ CMD ;} syntax
+    # while msg=${ getopts "hLs" opt "$@" 2>&1 ; } ; do
+    while getopts ":hLs" opt "$@" ; do
+        case ${opt} in
+            h) _vc_usage ; return 0 ;;
+            L) follow_link=true ;;
+            s) source_func_file=true ;;
+            ?) printf "Invalid option: '%s'\n" "${OPTARG}" >&2 ; _vc_usage ; return 1 ;;
         esac
     done
+    shift $((OPTIND-1))
 
     if (( $# != 1 )) ; then
         printf "${FUNCNAME[0]}: ERROR: Missing required argument CMD\n" >&2
