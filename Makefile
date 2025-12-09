@@ -17,7 +17,7 @@ install: share/man/man1/$(name).1
 	$(INSTALL) -m 644 etc/profile.d/$(name).zsh -D $(DESTDIR)$(PREFIX)/etc/profile.d/$(name).zsh
 	$(INSTALL) -m 644 share/man/man1/$(name).1 -D $(DESTDIR)$(PREFIX)/share/man/man1/$(name).1
 
-install-dev:
+install-dev: share/man/man1/$(name).1
 	install -d $(DESTDIR)$(PREFIX)/etc/profile.d
 	install -d $(DESTDIR)$(PREFIX)/share/man/man1
 	ln -snf $(this_makefile_dir)etc/profile.d/vc.bash $(DESTDIR)$(PREFIX)/etc/profile.d/vc.bash
