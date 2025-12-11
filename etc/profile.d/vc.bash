@@ -15,8 +15,9 @@ _vc_usage(){
 	I don't know what vc means, I named it that because of the stack overflow
 	question that inspired me to make this tool.
 
-	If '-s' is specified, then if CMD is a shell function, the file containing
-	this function will be sourced when the editor returns.
+	-s: If CMD is a shell function source the file after returning from the editor
+	-L: Follow links
+	-h: Show this help (see \`man vc\` for more info)
 	EOF
 }
 
@@ -25,6 +26,14 @@ vc(){
     local source_func_file=false
 
     local OPTIND=1
+    for a in "$@" ; do
+        if [[ "$a" == "--help" ]] ; then
+            this_file=${BASH_SOURCE[0]}
+            root=$(cd $(dirname ${this_file})/../.. && pwd)
+            man ${root}/share/man/man1/vc.1
+            return 0
+        fi
+    done
     # Bash 5.3 only using ${ CMD ;} syntax
     # while msg=${ getopts "hLs" opt "$@" 2>&1 ; } ; do
     while getopts ":hLs" opt "$@" ; do

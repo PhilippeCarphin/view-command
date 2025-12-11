@@ -7,23 +7,26 @@ vc - A command to open and edit commands and shell functions.
 * SYNOPSIS
 
 #+begin_src shell
-vc NAME
-whence NAME
+vc [-sLh] CMD
+whence [-L] CMD
 #+end_src
 
 * DESCRIPTION
 
-The command =vc= finds and opens shell functions, commands from =PATH=, and
-sourceable files from =PATH=.
+The command =vc= finds and opens commands
+- shell functions,
+- commands from =PATH=, and
+- sourceable files from =PATH=
+in that order.
 
 In the case of shell functions, it opens the file containing the definition
 of the function at the line where the function definition starts.
 
 =vc= only looks for sourceable files if the shell option =sourcepath= is on.
 
-=vc= searches in the same order as the shell would for results.  If there is
-an executable script with the same name as a shell function, the shell
-function will be opened.
+=vc= searches in the same order as the shell would for results.  Therefore,
+what =vc= opens is also what gets run (unless there is a shell builtin named
+=CMD=.
 
 The =whence= command follows the same logic but simply prints the location
 of the shell function, command, or sourceable file.
@@ -36,21 +39,53 @@ For example, if ~alias doit='cmd arg1 arg2'~ then the first word of the alias
 definition is =cmd= and =vc= will look for a shell function, executable file,
 or sourceable file in =PATH=.
 
+* OPTIONS
+
+** ~-s~
+
+If =CMD= is a shell function, when returning from the editor, source the file
+containing its definition.  If =CMD= is not a shell function, this option
+does nothing and no warning is given.
+
+** ~-L~
+
+Resolve all links using the =realpath= command.  Show this path in the output
+and open the resolved path in the editor.
+
+** ~-h~
+
+Show a short help.
+
 * CAVEATS
 
-For shell functions, BASH remembers the path given on the command line as the
-location of the function definition.  This means that if a function was
-defined in a file that was sourced using a relative path, =vc= will have no
-way of knowing the location of the function definition.
+** Sourcing with relative paths
 
-Finding the location of alias definitions is not possbile.  This is why the
-best we can do is use the first word of the alias and look for a function or
-file.
+When doing =source FILE= defines a function =my-func=, bash remembers the
+exact value of =FILE= as the location of the definition of the function.  If
+=FILE= is a relative path, then =vc my-func= will only succeed if =FILE=
+exists relative to =PWD=.
 
-The search in =PATH= finds many files that are not text.  In that case =vc=
-will print a message saying and ask for confirmation.
+However, BASH 5.3 the shell option =bash_source_fullpath=.  If this option is
+set, then BASH will resolve =FILE= to an absolute path.
 
-* Finding alias definitions
+I recommend sourcing using absolute paths in shell configuration files.
+
+** Aliases
+
+BASH does not remember where aliases are defined.  The best we can do is get
+the first word of the alias definition and try to find a shell-function,
+executable file in =PATH=, or sourceable file in =PATH= with that name.
+
+** Non text files
+
+Many executable files in =PATH= are compiled binaries.  Before opening a
+file, =vc= runs the =file= command and if the result does not contain either
+=ASCII=, =UTF-8=, or =text=, then a prompt informs the user and asks if they
+still want to open the file, if you are not sure, you should answer yes
+because this method of determining if the file is text is not garanteed to be
+correct.
+
+* Tips on finding alias definitions
 
 Since the tool cannot find alias defintions, here are some tips for doing
 that manually.
@@ -65,7 +100,7 @@ If environment variables can affect the startup process, something like
 ssh localhost "PS4='+ \033[35m${BASH_SOURCE[0]}\033[36m:\033[1;37m${FUNCNAME:+${FUNCNAME[0]}}\033[22;36m:\033[32m${LINENO}\033[36m:\033[0m' bash [--login] -x"
 #+end_src
 
-And search the output.
+And search the output for ~alias =~.
 
 * LORE
 

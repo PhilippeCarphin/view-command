@@ -1,1 +1,76 @@
-share/man/man1/vc.org
+#+TITLE: vc
+
+* NAME
+
+vc - A command to open and edit shell functions, executable files in =PATH, or sourceable files in =PATH=
+
+* SYNOPSIS
+
+#+begin_src shell
+vc [-sLh] CMD
+whence [-L] CMD
+#+end_src
+
+* DESCRIPTION
+
+
+The command =vc= finds and opens commands
+- shell functions (opens the file at the line number where the function starts)
+- commands from =PATH=, and
+- sourceable files from =PATH=
+in that order.
+
+=vc= searches in the same order as the shell would for results.  Therefore,
+what =vc= opens is also what gets run (unless there is a shell builtin named
+=CMD=.
+
+* MANPAGE
+
+[[share/man/man1/vc.org][=share/man/man1/vc.org=]]
+
+* INSTALLATION
+
+** Easy way
+
+Clone this repo and source =etc/profile.d/vc.bash= in your BASH startup files
+and access the manpage using =vc --help=
+
+** Other way
+
+Clone this repo and run =make PREFIX=<my-prefix> [install|install-dev]= and
+source =<my-prefix>/etc/profile.d/{*.sh,*.bash}=.
+
+This whole thing is just one file that needs to be sourced to define the =vc=
+shell function and it's autocomplete.
+
+I have a =my-prefix= where I install all my random tools and my BASH startup
+files sources all =*sh= and =*.bash= files in =<my-prefix>/etc/profile.d=.  I
+do it this way because on Linux and MacOS, the system =/etc/profile= file
+sources all =*.sh= files in =/etc/profile.d=.
+
+To use this system
+- Your shell startup file must source =<my-prefix>/etc/profile.d/{*.sh,*.bash}=
+- For the manpage
+  - If =<my-prefix>/bin= is in your =PATH= the "manpath map" mechanism will
+    make it so that =man= will look in =<my-prefix>/share/man= for
+    manpages[*].
+  - Or you can add =<my-prefix>/share/man= to the =MANPATH= environment
+    variable[*].
+  - The way =man= finds manpages has some caveats which is why I also added
+    the possibility of opening the manpage by doing =vc --help=.
+
+[*]: Setting a =MANPATH= variable makes =man= /only/ search the directories
+in =MANPATH= and not the usual directories /unless/ =MANPATH= contains an
+empty list element in the form of a leading colon, trailing colon or double
+colon.
+
+* LORE
+
+I created this script when answering
+[[https://stackoverflow.com/questions/54710501/command-completion-with-full-path-expansion-injected-into-history-for-vim/74283218#74283218][this question on Stack Overflow]].
+That's why the command is called =vc= so I don't know what VC stands for.
+But I'm deciding right now that it's for "view command".
+
+* AUTHOR
+
+Philippe Carphin
