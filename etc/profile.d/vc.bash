@@ -249,6 +249,9 @@ complete -F _vc vc whence
 _vc_open_file_at_line(){
     local file=$1
     local line=$2
+    if [[ -n ${follow_link} ]] ; then
+        file=$(realpath ${file})
+    fi
     case "${EDITOR}" in
         emacs*|emacsclient*|ec*) ${EDITOR} ${line:++$line} $file ;;
         *vim*|*vi*) ${EDITOR:-vim} $file ${line:++$line} ;;
