@@ -216,16 +216,17 @@ whence(){
     local reset_extdebug=$(shopt -p extdebug)
     shopt -s extdebug
 
-    local func file info link line realpath
+    local func file link line realpath
     # Shell function
     local name line file real_path
     if read name line file < <(declare -F ${cmd}) ; then
         if [[ -n ${follow_link} ]] ; then
-            if real_path=$(realpath ${file}) ; then
-                realpath=" -> $(realpath ${file})"
+            if realpath=$(realpath ${file}) ; then
+                file="${file} -> ${realpath}"
             fi
         fi
-        printf "${info}${realpath}\n"
+        printf "${name} is a shell function defined at line ${line} of ${file}${realpath}\n"
+        return 0
     fi
 
     # File from PATH
