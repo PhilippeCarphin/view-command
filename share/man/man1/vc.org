@@ -7,7 +7,7 @@ vc - A command to open and edit commands and shell functions.
 * SYNOPSIS
 
 #+begin_src shell
-vc [-sLh] CMD
+vc [-sLch] CMD
 whence [-L] CMD
 #+end_src
 
@@ -41,6 +41,8 @@ or sourceable file in =PATH=.
 
 * OPTIONS
 
+Options =-s= and =-c= only apply to =vc=.
+
 ** ~-s~
 
 If =CMD= is a shell function, when returning from the editor, source the file
@@ -51,6 +53,11 @@ does nothing and no warning is given.
 
 Resolve all links using the =realpath= command.  Show this path in the output
 and open the resolved path in the editor.
+
+** ~-c~
+
+Only look for executable files from PATH skipping shell functions and
+aliases.
 
 ** ~-h~
 

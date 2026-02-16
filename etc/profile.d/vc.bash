@@ -24,6 +24,7 @@ _vc_usage(){
 vc(){
     local follow_link=false
     local source_func_file=false
+    local command_only=false
 
     local OPTIND=1
     for a in "$@" ; do
@@ -36,9 +37,10 @@ vc(){
     done
     # Bash 5.3 only using ${ CMD ;} syntax
     # while msg=${ getopts "hLs" opt "$@" 2>&1 ; } ; do
-    while getopts ":hLs" opt "$@" ; do
+    while getopts ":hLsc" opt "$@" ; do
         case ${opt} in
             h) _vc_usage ; return 0 ;;
+            c) command_only=true ;;
             L) follow_link=true ;;
             s) source_func_file=true ;;
             ?) printf "Invalid option: '%s'\n" "${OPTARG}" >&2 ; _vc_usage ; return 1 ;;
@@ -52,7 +54,7 @@ vc(){
     fi
     local cmd="${1}"
     local alias_str
-    if [[ -n ${VC_EXPAND_ALIASES} ]] ; then
+    if [[ -n ${VC_EXPAND_ALIASES} ]] && ! ${command_only} ; then
         if alias_str=$(alias ${cmd} 2>/dev/null) ; then
             # output of alias is "alias <name>='<alias-definition>"
             local alias_def=${alias_str#*=}
@@ -64,12 +66,14 @@ vc(){
         fi
     fi
 
-    echo "${FUNCNAME[0]}: Looking for shell function '${cmd}'" >&2
-    _vc_open-shell-function "${cmd}" ; case $? in
-        0) return 0 ;; # We're back from opening the shell function
-        1) ;; # cmd is not a shell function, try other things
-        2) return 1 ;; # ${cmd} is a shell function but its file doesn't exist
-    esac
+    if ! ${command_only} ; then
+        echo "${FUNCNAME[0]}: Looking for shell function '${cmd}'" >&2
+        _vc_open-shell-function "${cmd}" ; case $? in
+            0) return 0 ;; # We're back from opening the shell function
+            1) ;; # cmd is not a shell function, try other things
+            2) return 1 ;; # ${cmd} is a shell function but its file doesn't exist
+        esac
+    fi
 
     echo "${FUNCNAME[0]}: Looking for executable '${cmd}' in PATH" >&2
     local file
@@ -94,7 +98,7 @@ vc(){
         echo "${FUNCNAME[0]}: ... '${cmd}' is not an executable in PATH" >&2
     fi
 
-    if shopt -q sourcepath ; then
+    if shopt -q sourcepath && ! ${command_only} ; then
         echo "${FUNCNAME[0]}: Looking for sourceable file in PATH" >&2
         file="$(find -L $(echo $PATH | tr ':' ' ') -name "${cmd}" ! -perm -100 -type f -print -quit)"
         if [[ -n "${file}" ]] ; then
