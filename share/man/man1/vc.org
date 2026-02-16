@@ -63,6 +63,15 @@ aliases.
 
 Show a short help.
 
+* EXIT STATUS
+
+The =vc= command exits 0 if it successfully found a result and opened it in
+the EDITOR.  It exits 1 if it did not find anything and exits with the exit
+code of EDITOR if it did find something.
+
+THe =whence= command exits 0 if it found at least one result and exits 1
+otherwise.
+
 * CAVEATS
 
 ** Sourcing with relative paths
