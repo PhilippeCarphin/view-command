@@ -212,9 +212,10 @@ whence(){
         shift
     fi
     local -r cmd=$1
+    local found_a_result=false
 
     if alias ${cmd} 2>/dev/null ; then
-        return
+        found_a_result=true
     fi
 
     local reset_extdebug=$(shopt -p extdebug)
@@ -230,23 +231,23 @@ whence(){
             fi
         fi
         printf "${name} is a shell function defined at line ${line} of ${file}${realpath}\n"
-        return 0
+        found_a_result=true
     fi
 
     # File from PATH
-    if file=$(command which ${cmd} 2>/dev/null) ; then
-        : good
-    elif file="$(find -L $(echo $PATH | tr ':' ' ') -mindepth 1 -maxdepth 1 -name "${cmd}" ! -perm -100 -type f)" ; then
-        : good
-    else
-        return 1
+    if file=$(command which ${cmd} 2>/dev/null) \
+       || file="$(find -L $(echo $PATH | tr ':' ' ') \
+                   -mindepth 1 -maxdepth 1 -name "${cmd}" \
+                   ! -perm -100 -type f)" ; then
+        found_a_result=true
+        if [[ -n ${follow_link} ]] ; then
+            realpath=" ~ $(realpath ${file})"
+        fi
+        echo "${cmd} is ${file}${realpath}"
     fi
 
-    if [[ -n ${follow_link} ]] ; then
-        realpath=" ~ $(realpath ${file})"
-    fi
-    echo "${file}${realpath}"
     ${reset_extdebug}
+    ${found_a_result}
 }
 
 complete -F _vc vc whence
