@@ -206,11 +206,37 @@ _vc_open-shell-function(){
 
 whence(){
 
-    local follow_link
-    if [[ $1 == -L ]] ; then
-        follow_link=true
-        shift
+    local follow_link=false
+    local source_func_file=false
+    local command_only=false
+
+    local OPTIND=1
+    for a in "$@" ; do
+        if [[ "$a" == "--help" ]] ; then
+            this_file=${BASH_SOURCE[0]}
+            root=$(cd $(dirname ${this_file})/../.. && pwd)
+            man ${root}/share/man/man1/vc.1
+            return 0
+        fi
+    done
+    # Bash 5.3 only using ${ CMD ;} syntax
+    # while msg=${ getopts "hLs" opt "$@" 2>&1 ; } ; do
+    while getopts ":hLsc" opt "$@" ; do
+        case ${opt} in
+            h) _vc_usage ; return 0 ;;
+            c) command_only=true ;;
+            L) follow_link=true ;;
+            s) source_func_file=true ;;
+            ?) printf "Invalid option: '%s'\n" "${OPTARG}" >&2 ; _vc_usage ; return 1 ;;
+        esac
+    done
+    shift $((OPTIND-1))
+
+    if (( $# != 1 )) ; then
+        printf "${FUNCNAME[0]}: ERROR: Missing required argument CMD\n" >&2
+        return 1
     fi
+
     local -r cmd=$1
     local found_a_result=false
 
@@ -230,20 +256,32 @@ whence(){
                 file="${file} -> ${realpath}"
             fi
         fi
-        printf "${name} is a shell function defined at line ${line} of ${file}${realpath}\n"
+        printf "${name} is a shell function defined at line ${line} of ${file}\n"
         found_a_result=true
     fi
 
     # File from PATH
-    if file=$(command which ${cmd} 2>/dev/null) \
-       || file="$(find -L $(echo $PATH | tr ':' ' ') \
-                   -mindepth 1 -maxdepth 1 -name "${cmd}" \
-                   ! -perm -100 -type f)" ; then
+    if file=$(command which ${cmd} 2>/dev/null) ; then
         found_a_result=true
         if [[ -n ${follow_link} ]] ; then
             realpath=" ~ $(realpath ${file})"
         fi
-        echo "${cmd} is ${file}${realpath}"
+        printf "${cmd} is executable file ${file}\n"
+    fi
+
+    # Sourceable file from PATH
+    if shopt -q sourcepath && ! ${command_only} ; then
+        echo "${FUNCNAME[0]}: Looking for sourceable file in PATH" >&2
+        file="$(find -L $(echo $PATH | tr ':' ' ') -name "${cmd}" ! -perm -100 -type f -print -quit)"
+        if [[ -n ${file} ]] ; then
+            found_a_result=true
+            if [[ -n ${follow_link} ]] ; then
+                if realpath=$(realpath ${file}) ; then
+                    file="${file} -> ${realpath}"
+                fi
+            fi
+            printf "${cmd} is non-executable file from PATH: ${file}\n"
+        fi
     fi
 
     ${reset_extdebug}
