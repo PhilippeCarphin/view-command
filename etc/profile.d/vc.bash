@@ -48,7 +48,7 @@ vc(){
     done
     shift $((OPTIND-1))
 
-    if (( $# != 1 )) ; then
+    if (( $# < 1 )) ; then
         printf "${FUNCNAME[0]}: ERROR: Missing required argument CMD\n" >&2
         return 1
     fi
