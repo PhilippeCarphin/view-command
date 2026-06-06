@@ -237,6 +237,12 @@ whence(){
         return 1
     fi
 
+    if (($# == 0)) ; then
+        printf "${FUNCNAME[0]}: Usage: ${FUNCNAME[0]} [-L] CMD\n"
+        printf "${FUNCNAME[0]}: \033[31mERROR\033[0m: Missing argument CMD\n"
+        return 1
+    fi
+
     local -r cmd=$1
     local found_a_result=false
 
