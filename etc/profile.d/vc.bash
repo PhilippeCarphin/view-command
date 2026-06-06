@@ -5,19 +5,26 @@
 #
 _vc_usage(){
     cat <<-EOF
-	usage: vc [-sLh] CMD
+	usage: vc [-schL] CMD
 
-	Open file where CMD is defined.  CMD can be
-	- A shell function: vc will open the file where the function is defined
-	  at the first line of the function
-	- An executable script in PATH: vc will open the file
-	- A non-executable file in PATH if the shell option 'sourcepath' is active.
-	I don't know what vc means, I named it that because of the stack overflow
-	question that inspired me to make this tool.
+	DESCRIPTION
 
-	-s: If CMD is a shell function source the file after returning from the editor
-	-L: Follow links
-	-h: Show this help (see \`man vc\` for more info)
+	    Open file where CMD is defined.  CMD can be
+	    - A shell function: vc will open the file where the function is defined
+	      at the first line of the function
+	    - An executable script in PATH: vc will open the file
+	    - A non-executable file in PATH if the shell option 'sourcepath' is active.
+	    I don't know what vc means, I named it that because of the stack overflow
+	    question that inspired me to make this tool, I decided it was short for
+	    \"view-command\".
+
+	OPTIONS:
+	    -c: Command only.  Skip looking for aliases and shell functions.
+	    -s: If CMD is a shell function, source the file containing this
+	        function when the editor returns.
+	    -L: Recursively follow links and resolve links in the PATH
+	        using the \`realpath\` command.
+	    -h: Show this message
 	EOF
 }
 
