@@ -85,6 +85,9 @@ vc(){
     echo "${FUNCNAME[0]}: Looking for executable '${cmd}' in PATH" >&2
     local file
     if file=$(command which ${cmd} 2>/dev/null) ; then
+        if ${follow_links} ; then
+            file=$(readlink -f $file)
+        fi
         echo "${FUNCNAME[0]}: ... '${cmd}' is '${file}' from PATH" >&2
         local file_result="$(file -L ${file})"
         local file_result_first_line="${file_result%%$'\n'*}"
@@ -109,6 +112,9 @@ vc(){
         echo "${FUNCNAME[0]}: Looking for sourceable file in PATH" >&2
         file="$(find -L $(echo $PATH | tr ':' ' ') -name "${cmd}" ! -perm -100 -type f -print -quit)"
         if [[ -n "${file}" ]] ; then
+            if ${follow_links} ; then
+                file=$(readlink -f $file)
+            fi
             echo "${FUNCNAME[0]}: ... '${cmd}' is non-executable file '${file}' from PATH" >&2
             _vc_open_file_at_line ${file}
             return
@@ -195,6 +201,10 @@ _vc_open-shell-function(){
     if ! [[ -e "${file}" ]] ; then
         echo "vc: ERROR: '${cmd}' is a shell function from '${file}' which does not exist" >&2
         return 2
+    fi
+
+    if ${follow_links} ; then
+        file=$(readlink -f $file)
     fi
 
     echo "vc: ... Shell function '${cmd}' found: Opening '${file}' at line ${lineno}" >&2
