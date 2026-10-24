@@ -33,7 +33,7 @@ vc(){
     local source_func_file=false
     local command_only=false
 
-    local OPTIND=1
+    local a
     for a in "$@" ; do
         if [[ "$a" == "--help" ]] ; then
             this_file=${BASH_SOURCE[0]}
@@ -44,6 +44,7 @@ vc(){
     done
     # Bash 5.3 only using ${ CMD ;} syntax
     # while msg=${ getopts "hLs" opt "$@" 2>&1 ; } ; do
+    local opt OPTIND=1
     while getopts ":hLsc" opt "$@" ; do
         case ${opt} in
             h) _vc_usage ; return 0 ;;
