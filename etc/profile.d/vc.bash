@@ -19,6 +19,7 @@ _vc_usage(){
 	    \"view-command\".
 
 	OPTIONS:
+	    -C: Open the completion function for CMD
 	    -c: Command only.  Skip looking for aliases and shell functions.
 	    -s: If CMD is a shell function, source the file containing this
 	        function when the editor returns.
@@ -32,6 +33,7 @@ vc(){
     local follow_link=false
     local source_func_file=false
     local command_only=false
+    local show_comp=false
 
     local a
     for a in "$@" ; do
@@ -45,9 +47,10 @@ vc(){
     # Bash 5.3 only using ${ CMD ;} syntax
     # while msg=${ getopts "hLs" opt "$@" 2>&1 ; } ; do
     local opt OPTIND=1
-    while getopts ":hLsc" opt "$@" ; do
+    while getopts ":hLscC:" opt "$@" ; do
         case ${opt} in
             h) _vc_usage ; return 0 ;;
+            C) show_comp=true ;;
             c) command_only=true ;;
             L) follow_link=true ;;
             s) source_func_file=true ;;
@@ -60,7 +63,14 @@ vc(){
         printf "${FUNCNAME[0]}: ERROR: Missing required argument CMD\n" >&2
         return 1
     fi
+
     local cmd="${1}"
+
+    if ${show_comp} ; then
+        _vc_show_comp "${cmd}"
+        return
+    fi
+
     local alias_str
     if [[ -n ${VC_EXPAND_ALIASES} ]] && ! ${command_only} ; then
         if alias_str=$(alias ${cmd} 2>/dev/null) ; then
@@ -123,6 +133,33 @@ vc(){
             echo "${FUNCNAME[0]}: ... '${cmd}' is not a sourceable file in PATH" >&2
         fi
     fi
+}
+
+_vc_show_comp(){
+    local cmd=$1
+    local compspec
+    echo "vc: ... attempting to find completion function for '${cmd}'" >&2
+    if ! compspec=($(complete -p ${cmd} 2>/dev/null)) ; then
+        echo "vc: ... '${cmd}' has no compspec, triggering lazy-loading" >&2
+        if declare -F _completion_loader >/dev/null 2>&1 ; then
+            _completion_loader ${cmd}
+        fi
+        if ! compspec=($(complete -p ${cmd})) ; then
+            echo "vc: after lazy loading, '${cmd}' still has no compspec." >&2
+            return 1
+        fi
+    fi
+    echo "vc: ... Completion spec for '${cmd}' is '${compspec[*]}'" >&2
+
+    local i
+    for ((i=1;i<${#compspec[@]};i++)); do
+        case ${compspec[i]} in
+            -F|-C) vc ${compspec[++i]} ; return ;;
+        esac
+    done
+    echo "vc; ... '${cmd}' has no function or command for its completion" >&2
+
+    # Man bash: "Programmable completion"
 }
 
 # Sourceable here means
